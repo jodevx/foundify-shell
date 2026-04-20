@@ -2,7 +2,13 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
-import { LoginRequest, LoginResponse, LogoutResponse, AuthUser } from '../interfaces/auth.interface';
+import {
+  LoginRequest,
+  RegisterRequest,
+  LoginResponse,
+  LogoutResponse,
+  AuthUser,
+} from '../interfaces/auth.interface';
 
 @Injectable({
   providedIn: 'root'
@@ -50,6 +56,42 @@ export class AuthService {
     this.isLoadingSignal.set(true);
     
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, credentials).pipe(
+      tap({
+        next: (response) => {
+          this.setToken(response.accessToken);
+          this.currentUserSignal.set(this.decodeToken(response.accessToken));
+          this.isLoadingSignal.set(false);
+        },
+        error: () => {
+          this.isLoadingSignal.set(false);
+        }
+      })
+    );
+  }
+
+  /**
+   * Registro de usuario
+   */
+  register(payload: RegisterRequest): Observable<LoginResponse> {
+    this.isLoadingSignal.set(true);
+
+    const formData = new FormData();
+    formData.append('email', payload.email);
+    formData.append('password', payload.password);
+    formData.append('firstName', payload.firstName);
+    formData.append('firstLastName', payload.firstLastName);
+    formData.append('secondLastName', payload.secondLastName);
+    formData.append('gender', payload.gender);
+
+    if (payload.secondName) {
+      formData.append('secondName', payload.secondName);
+    }
+
+    if (payload.profilePhotoFile) {
+      formData.append('profilePhoto', payload.profilePhotoFile);
+    }
+
+    return this.http.post<LoginResponse>(`${this.apiUrl}/register`, formData).pipe(
       tap({
         next: (response) => {
           this.setToken(response.accessToken);

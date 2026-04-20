@@ -67,6 +67,10 @@ import { AuthService } from '../../../core/services/auth.service';
         
         <div class="demo-credentials">
           <p><strong>Demo:</strong> admin@foundify.com / Admin123!</p>
+          <p class="register-cta">
+            ¿No tienes cuenta?
+            <a (click)="goToRegister()">Regístrate</a>
+          </p>
         </div>
       </div>
     </div>
@@ -211,6 +215,21 @@ import { AuthService } from '../../../core/services/auth.service';
           color: #667eea;
         }
       }
+
+      .register-cta {
+        margin-top: 10px;
+      }
+
+      a {
+        color: #667eea;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
     }
   `]
 })
@@ -250,5 +269,9 @@ export class LoginComponent {
         );
       }
     });
+  }
+
+  goToRegister(): void {
+    this.router.navigate(['/register']);
   }
 }

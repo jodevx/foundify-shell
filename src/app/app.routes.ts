@@ -9,6 +9,12 @@ export const routes: Routes = [
     title: 'Login - Foundify'
   },
   {
+    path: 'register',
+    loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent),
+    canActivate: [noAuthGuard],
+    title: 'Registro - Foundify'
+  },
+  {
     path: '',
     loadComponent: () => import('./features/home/home.component').then(m => m.HomeComponent),
     canActivate: [authGuard],
