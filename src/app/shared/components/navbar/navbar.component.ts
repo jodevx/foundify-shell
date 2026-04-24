@@ -35,6 +35,10 @@ import { AuthService } from '../../../core/services/auth.service';
               </button>
             </div>
           </div>
+        } @else {
+          <div class="nav-menu">
+            <button class="login-button" routerLink="/login">Iniciar Sesión</button>
+          </div>
         }
       </div>
     </nav>
@@ -140,6 +144,25 @@ import { AuthService } from '../../../core/services/auth.service';
           transform: translateY(-2px);
           box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
+      }
+    }
+    
+    .login-button {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
       }
     }
     

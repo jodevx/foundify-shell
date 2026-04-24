@@ -38,13 +38,17 @@ export class AuthService {
    */
   private initializeAuth(): void {
     const token = this.getToken();
+    console.log('🔐 AuthService.initializeAuth - Token existe:', !!token);
     if (token) {
       // Decodificar el JWT para obtener los datos del usuario
       const user = this.decodeToken(token);
+      console.log('🔐 AuthService.initializeAuth - Usuario decodificado:', user);
       if (user) {
         this.currentUserSignal.set(user);
+        console.log('✅ Usuario autenticado:', user.email);
       } else {
         this.clearAuth();
+        console.log('❌ No se pudo decodificar el token, limpiando auth');
       }
     }
   }
@@ -58,11 +62,16 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${this.apiUrl}/login`, credentials).pipe(
       tap({
         next: (response) => {
+          console.log('🔐 AuthService.login - Response recibida:', response);
           this.setToken(response.accessToken);
-          this.currentUserSignal.set(this.decodeToken(response.accessToken));
+          const user = this.decodeToken(response.accessToken);
+          console.log('🔐 AuthService.login - Usuario decodificado:', user);
+          this.currentUserSignal.set(user);
           this.isLoadingSignal.set(false);
+          console.log('✅ Login exitoso');
         },
-        error: () => {
+        error: (err) => {
+          console.error('❌ Error en login:', err);
           this.isLoadingSignal.set(false);
         }
       })
@@ -149,6 +158,11 @@ export class AuthService {
     localStorage.removeItem(this.tokenKey);
     this.currentUserSignal.set(null);
   }
+
+  handleUnauthorized(): void {
+    this.clearAuth();
+    this.router.navigate(['/login']);
+  }
   
   /**
    * Decodifica el JWT para obtener los datos del usuario
@@ -157,6 +171,18 @@ export class AuthService {
     try {
       const base64Payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
       const payload = JSON.parse(atob(base64Payload));
+
+      if (!payload?.sub || !payload?.email) {
+        return null;
+      }
+
+      if (payload.exp) {
+        const nowInSeconds = Math.floor(Date.now() / 1000);
+        if (payload.exp <= nowInSeconds) {
+          return null;
+        }
+      }
+
       return {
         id: payload.sub,
         email: payload.email

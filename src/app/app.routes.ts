@@ -1,7 +1,13 @@
 import { Routes } from '@angular/router';
-import { authGuard, noAuthGuard } from './core/guards/auth.guard';
+import { authGuard, noAuthGuard, rootGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
+  {
+    path: '',
+    canActivate: [rootGuard],
+    loadComponent: () => import('./features/root/root.component').then(m => m.RootComponent),
+    title: 'Foundify'
+  },
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent),
@@ -15,13 +21,30 @@ export const routes: Routes = [
     title: 'Registro - Foundify'
   },
   {
-    path: '',
-    loadComponent: () => import('./features/home/home.component').then(m => m.HomeComponent),
+    path: 'items',
+    loadComponent: () => import('./features/items/items-list/items-list.component').then(m => m.ItemsListComponent),
+    title: 'Publicaciones - Foundify'
+  },
+  {
+    path: 'items/new',
+    loadComponent: () => import('./features/items/item-form/item-form.component').then(m => m.ItemFormComponent),
     canActivate: [authGuard],
-    title: 'Home - Foundify'
+    title: 'Nueva publicación - Foundify'
+  },
+  {
+    path: 'items/:id/edit',
+    loadComponent: () => import('./features/items/item-form/item-form.component').then(m => m.ItemFormComponent),
+    canActivate: [authGuard],
+    title: 'Editar publicación - Foundify'
+  },
+  {
+    path: 'items/:id',
+    loadComponent: () => import('./features/items/item-detail/item-detail.component').then(m => m.ItemDetailComponent),
+    title: 'Detalle - Foundify'
   },
   {
     path: '**',
     redirectTo: ''
   }
 ];
+
