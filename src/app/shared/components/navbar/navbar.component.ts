@@ -1,7 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { ClaimsService } from '../../../core/services/claims.service';
 
 @Component({
   selector: 'app-navbar',
@@ -21,9 +22,10 @@ import { AuthService } from '../../../core/services/auth.service';
           <div class="nav-menu">
             <div class="nav-links">
               <a routerLink="/" class="nav-link">Inicio</a>
-              <span class="nav-link disabled">Objetos Perdidos</span>
-              <span class="nav-link disabled">Objetos Encontrados</span>
-              <span class="nav-link disabled">Mis Publicaciones</span>
+              <a routerLink="/items" class="nav-link">Publicaciones</a>
+              <a routerLink="/inbox" class="nav-link">
+                Bandeja@if (inboxCount() > 0) { ({{ inboxCount() }}) }
+              </a>
             </div>
             
             <div class="nav-user">
@@ -197,6 +199,22 @@ import { AuthService } from '../../../core/services/auth.service';
 })
 export class NavbarComponent {
   readonly authService = inject(AuthService);
+  readonly claimsService = inject(ClaimsService);
+  readonly inboxCount = signal(0);
+
+  constructor() {
+    effect(() => {
+      if (!this.authService.isAuthenticated()) {
+        this.inboxCount.set(0);
+        return;
+      }
+
+      this.claimsService.getInboxCount().subscribe({
+        next: (count) => this.inboxCount.set(count),
+        error: () => this.inboxCount.set(0),
+      });
+    });
+  }
   
   onLogout(): void {
     if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {

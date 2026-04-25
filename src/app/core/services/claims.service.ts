@@ -1,7 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Claim, CreateClaimRequest } from '../interfaces/item.interface';
+import {
+  Claim,
+  CreateClaimRequest,
+  InboxResponse,
+} from '../interfaces/item.interface';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
 export class ClaimsService {
@@ -22,5 +27,13 @@ export class ClaimsService {
 
   cancel(itemId: string, claimId: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${itemId}/claims/${claimId}`);
+  }
+
+  getInbox(): Observable<InboxResponse> {
+    return this.http.get<InboxResponse>('http://localhost:3000/claims/inbox');
+  }
+
+  getInboxCount(): Observable<number> {
+    return this.getInbox().pipe(map((response) => response.data.length));
   }
 }

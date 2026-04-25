@@ -6,7 +6,7 @@ import { NavbarComponent } from '../../../shared/components/navbar/navbar.compon
 import { ItemsService } from '../../../core/services/items.service';
 import { ClaimsService } from '../../../core/services/claims.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { Item, Claim, ItemStatus } from '../../../core/interfaces/item.interface';
+import { Item, ItemStatus } from '../../../core/interfaces/item.interface';
 
 const CLAIMABLE_STATUSES = ['reportado_perdido', 'reportado_encontrado'];
 const INITIAL_STATUS_BY_TYPE: Record<string, string> = {
@@ -173,35 +173,6 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
             }
           </div>
 
-          <!-- Panel de reclamos (solo dueño) -->
-          @if (item()!.isOwner) {
-            <div class="claims-panel">
-              <h2>{{ claimsPanelTitle() }}</h2>
-              @if (loadingClaims()) {
-                <div class="loading"><div class="spinner small"></div></div>
-              } @else if (claims().length === 0) {
-                <p class="no-claims">{{ claimsPanelEmptyText() }}</p>
-              } @else {
-                @for (claim of claims(); track claim.id) {
-                  <div class="claim-card" [class]="'claim-' + claim.status">
-                    <div class="claim-header">
-                      <span class="claim-badge" [class]="'badge-claim-' + claim.status">
-                        {{ formatClaimStatus(claim.status) }}
-                      </span>
-                      <span class="claim-date">{{ claim.createdAt | date:'dd/MM/yyyy' }}</span>
-                    </div>
-                    <p class="claim-message">{{ claim.claimMessage }}</p>
-                    @if (claim.status === 'pendiente') {
-                      <div class="claim-btns">
-                        <button class="btn-accept" (click)="manageClaim(claim.id, 'aceptado')">✓ Aceptar</button>
-                        <button class="btn-reject" (click)="manageClaim(claim.id, 'rechazado')">✗ Rechazar</button>
-                      </div>
-                    }
-                  </div>
-                }
-              }
-            </div>
-          }
         </div>
       }
     </div>
@@ -220,8 +191,8 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
     .spinner.small { width: 24px; height: 24px; border-width: 3px; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .detail-layout { display: grid; grid-template-columns: 1fr 360px; gap: 24px; align-items: start; }
-    .main-panel, .claims-panel {
+    .detail-layout { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; }
+    .main-panel {
       background: white;
       border-radius: 16px;
       box-shadow: 0 4px 24px rgba(0,0,0,0.08);
@@ -304,33 +275,6 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
       font-size: 0.88rem;
     }
 
-    /* Claims panel */
-    .claims-panel h2 { margin: 0 0 20px; font-size: 1.1rem; color: #1a1a2e; }
-    .no-claims { color: #999; font-size: 0.9rem; }
-    .claim-card {
-      border: 1px solid #eee;
-      border-radius: 10px;
-      padding: 14px;
-      margin-bottom: 12px;
-    }
-    .claim-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .claim-badge { padding: 3px 10px; border-radius: 10px; font-size: 0.78rem; font-weight: 600; }
-    .badge-claim-pendiente { background: #fff3cd; color: #856404; }
-    .badge-claim-aceptado { background: #d1e7dd; color: #0f5132; }
-    .badge-claim-rechazado { background: #f8d7da; color: #721c24; }
-    .badge-claim-cancelado { background: #f0f0f0; color: #888; }
-    .claim-date { font-size: 0.78rem; color: #aaa; }
-    .claim-message { font-size: 0.9rem; color: #444; margin: 0 0 10px; line-height: 1.5; }
-    .claim-btns { display: flex; gap: 8px; }
-    .btn-accept {
-      flex: 1; padding: 8px; border: none; border-radius: 6px;
-      background: #198754; color: white; cursor: pointer; font-weight: 600; font-size: 0.88rem;
-    }
-    .btn-reject {
-      flex: 1; padding: 8px; border: none; border-radius: 6px;
-      background: #dc3545; color: white; cursor: pointer; font-weight: 600; font-size: 0.88rem;
-    }
-
     .btn-outline {
       padding: 6px 14px; border: 1px solid #6c63ff; border-radius: 8px;
       background: white; color: #6c63ff; cursor: pointer; font-size: 0.88rem;
@@ -359,8 +303,6 @@ export class ItemDetailComponent implements OnInit {
 
   readonly item = signal<Item | null>(null);
   readonly loading = signal(true);
-  readonly claims = signal<Claim[]>([]);
-  readonly loadingClaims = signal(false);
   readonly showClaimForm = signal(false);
   readonly submittingClaim = signal(false);
   readonly claimError = signal('');
@@ -373,22 +315,8 @@ export class ItemDetailComponent implements OnInit {
       next: item => {
         this.item.set(item);
         this.loading.set(false);
-        if (item.isOwner) {
-          this.loadClaims(id);
-        }
       },
       error: () => this.loading.set(false)
-    });
-  }
-
-  loadClaims(itemId: string) {
-    this.loadingClaims.set(true);
-    this.claimsService.getByItem(itemId).subscribe({
-      next: res => {
-        this.claims.set(res.data);
-        this.loadingClaims.set(false);
-      },
-      error: () => this.loadingClaims.set(false)
     });
   }
 
@@ -438,20 +366,6 @@ export class ItemDetailComponent implements OnInit {
     return 'Enviar reclamo';
   }
 
-  claimsPanelTitle(): string {
-    if (this.item()?.type === 'lost_item') {
-      return 'Avisos recibidos';
-    }
-    return 'Reclamos recibidos';
-  }
-
-  claimsPanelEmptyText(): string {
-    if (this.item()?.type === 'lost_item') {
-      return 'Aún no hay avisos para esta publicación.';
-    }
-    return 'Aún no hay reclamos para esta publicación.';
-  }
-
   allowedTransitions(): string[] {
     return ALLOWED_TRANSITIONS[this.item()!.status] ?? [];
   }
@@ -485,16 +399,6 @@ export class ItemDetailComponent implements OnInit {
     return !(currentItem.type === 'found_item' && currentItem.status === 'reportado_encontrado');
   }
 
-  formatClaimStatus(status: string): string {
-    const labels: Record<string, string> = {
-      pendiente: '⏳ Pendiente',
-      aceptado: '✅ Aceptado',
-      rechazado: '❌ Rechazado',
-      cancelado: '🚫 Cancelado',
-    };
-    return labels[status] ?? status;
-  }
-
   changeStatus(status: string) {
     const id = this.item()!.id;
     this.itemsService.update(id, { status: status as ItemStatus }).subscribe({
@@ -525,12 +429,6 @@ export class ItemDetailComponent implements OnInit {
         this.submittingClaim.set(false);
         this.claimError.set(err?.error?.message ?? 'No se pudo enviar el reclamo.');
       }
-    });
-  }
-
-  manageClaim(claimId: string, action: 'aceptado' | 'rechazado') {
-    this.claimsService.manage(this.item()!.id, claimId, action).subscribe({
-      next: () => this.loadClaims(this.item()!.id)
     });
   }
 

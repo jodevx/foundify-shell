@@ -43,6 +43,12 @@ export const routes: Routes = [
     title: 'Detalle - Foundify'
   },
   {
+    path: 'inbox',
+    loadComponent: () => import('./features/claims/inbox/inbox.component').then(m => m.InboxComponent),
+    canActivate: [authGuard],
+    title: 'Bandeja - Foundify'
+  },
+  {
     path: '**',
     redirectTo: ''
   }

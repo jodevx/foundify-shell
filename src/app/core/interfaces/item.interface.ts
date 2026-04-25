@@ -100,3 +100,19 @@ export interface UpdateItemRequest {
 export interface CreateClaimRequest {
   claimMessage: string;
 }
+
+export interface InboxNotification {
+  id: string;
+  itemId: string;
+  itemTitle: string;
+  itemType: ItemType;
+  claimMessage: string;
+  status: ClaimStatus;
+  createdAt: string;
+  claimant: { id: string; email: string };
+  interactionLabel: 'aviso' | 'reclamo';
+}
+
+export interface InboxResponse {
+  data: InboxNotification[];
+}
