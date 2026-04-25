@@ -29,13 +29,13 @@ import { Item, CreateItemRequest, ItemType } from '../../../core/interfaces/item
               <div class="field">
                 <label>Tipo de publicación *</label>
                 <div class="type-selector">
-                  <label class="type-option" [class.selected]="form.type === 'perdido'">
-                    <input type="radio" name="type" value="perdido" [(ngModel)]="form.type" />
-                    🔍 Perdido
+                  <label class="type-option" [class.selected]="form.type === 'lost_item'">
+                    <input type="radio" name="type" value="lost_item" [(ngModel)]="form.type" />
+                    🔍 Lo perdí
                   </label>
-                  <label class="type-option" [class.selected]="form.type === 'encontrado'">
-                    <input type="radio" name="type" value="encontrado" [(ngModel)]="form.type" />
-                    ✨ Encontrado
+                  <label class="type-option" [class.selected]="form.type === 'found_item'">
+                    <input type="radio" name="type" value="found_item" [(ngModel)]="form.type" />
+                    ✨ Quiero devolverlo
                   </label>
                 </div>
               </div>
@@ -305,7 +305,7 @@ export class ItemFormComponent implements OnInit {
   form: CreateItemRequest = {
     title: '',
     description: '',
-    type: 'perdido',
+    type: 'lost_item',
     categorySlug: '',
     location: '',
     eventDate: '',

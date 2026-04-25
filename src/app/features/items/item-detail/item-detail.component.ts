@@ -59,8 +59,8 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
 
             <!-- Badges -->
             <div class="badges">
-              <span class="badge" [class]="'badge-' + item()!.type">
-                {{ item()!.type === 'perdido' ? '🔍 Perdido' : '✨ Encontrado' }}
+              <span class="badge" [class]="'badge-' + item()!.type.replace('_', '-')">
+                {{ item()!.type === 'lost_item' ? '🔍 Lo perdí' : '✨ Quiero devolverlo' }}
               </span>
               <span class="badge badge-status">{{ formatStatus(item()!.status) }}</span>
             </div>
@@ -122,7 +122,7 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
             }
 
             <!-- Botón reclamar (no dueño, objeto encontrado, estado claimable) -->
-            @if (!item()!.isOwner && authService.isAuthenticated() && item()!.type === 'encontrado' && isClaimable()) {
+            @if (!item()!.isOwner && authService.isAuthenticated() && item()!.type === 'found_item' && isClaimable()) {
               <div class="claim-section">
                 @if (!showClaimForm()) {
                   <button class="btn-claim" (click)="showClaimForm.set(true)">
@@ -151,7 +151,7 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
               </div>
             }
 
-            @if (!authService.isAuthenticated() && item()!.type === 'encontrado' && isClaimable()) {
+            @if (!authService.isAuthenticated() && item()!.type === 'found_item' && isClaimable()) {
               <div class="claim-section">
                 <p>¿Es tuyo? <a (click)="router.navigate(['/login'])">Inicia sesión</a> para reclamarlo.</p>
               </div>
@@ -159,7 +159,7 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
           </div>
 
           <!-- Panel de reclamos (solo dueño del item encontrado) -->
-          @if (item()!.isOwner && item()!.type === 'encontrado') {
+          @if (item()!.isOwner && item()!.type === 'found_item') {
             <div class="claims-panel">
               <h2>Reclamos recibidos</h2>
               @if (loadingClaims()) {
@@ -219,8 +219,8 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
 
     .badges { display: flex; gap: 8px; margin-bottom: 16px; }
     .badge { padding: 4px 12px; border-radius: 12px; font-size: 0.82rem; font-weight: 600; }
-    .badge-perdido { background: #fff3cd; color: #856404; }
-    .badge-encontrado { background: #d1e7dd; color: #0f5132; }
+    .badge-lost-item { background: #fff3cd; color: #856404; }
+    .badge-found-item { background: #d1e7dd; color: #0f5132; }
     .badge-status { background: #f0f0f0; color: #555; }
 
     .item-title { font-size: 1.7rem; color: #1a1a2e; margin: 0 0 12px; }
@@ -357,7 +357,7 @@ export class ItemDetailComponent implements OnInit {
       next: item => {
         this.item.set(item);
         this.loading.set(false);
-        if (item.isOwner && item.type === 'encontrado') {
+        if (item.isOwner && item.type === 'found_item') {
           this.loadClaims(id);
         }
       },

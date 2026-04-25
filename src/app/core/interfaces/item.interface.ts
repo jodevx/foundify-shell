@@ -1,4 +1,4 @@
-export type ItemType = 'perdido' | 'encontrado';
+export type ItemType = 'lost_item' | 'found_item';
 
 export type ItemStatusPerdido =
   | 'reportado_perdido'

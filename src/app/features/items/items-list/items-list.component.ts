@@ -31,8 +31,8 @@ import { Item, ItemType, ItemFilters } from '../../../core/interfaces/item.inter
         <div class="filters">
           <div class="filter-tabs">
             <button [class.active]="filters().type === undefined" (click)="setType(undefined)">Todos</button>
-            <button [class.active]="filters().type === 'perdido'" (click)="setType('perdido')">🔍 Perdidos</button>
-            <button [class.active]="filters().type === 'encontrado'" (click)="setType('encontrado')">✨ Encontrados</button>
+            <button [class.active]="filters().type === 'lost_item'" (click)="setType('lost_item')">🔍 Lo perdí</button>
+            <button [class.active]="filters().type === 'found_item'" (click)="setType('found_item')">✨ Quiero devolverlo</button>
           </div>
 
           <div class="filter-row">
@@ -79,8 +79,8 @@ import { Item, ItemType, ItemFilters } from '../../../core/interfaces/item.inter
                 <img class="card-photo" [src]="item.photoUrl" alt="Imagen del objeto" />
               }
               <div class="card-badges">
-                <span class="badge" [class]="'badge-' + item.type">
-                  {{ item.type === 'perdido' ? '🔍 Perdido' : '✨ Encontrado' }}
+                <span class="badge" [class]="'badge-' + item.type.replace('_', '-')">
+                  {{ item.type === 'lost_item' ? '🔍 Lo perdí' : '✨ Quiero devolverlo' }}
                 </span>
                 <span class="badge badge-status">{{ formatStatus(item.status) }}</span>
               </div>
@@ -214,8 +214,8 @@ import { Item, ItemType, ItemFilters } from '../../../core/interfaces/item.inter
       font-size: 0.78rem;
       font-weight: 600;
     }
-    .badge-perdido { background: #fff3cd; color: #856404; }
-    .badge-encontrado { background: #d1e7dd; color: #0f5132; }
+    .badge-lost-item { background: #fff3cd; color: #856404; }
+    .badge-found-item { background: #d1e7dd; color: #0f5132; }
     .badge-status { background: #f0f0f0; color: #555; }
     .card-title { margin: 0 0 8px; font-size: 1.05rem; color: #1a1a2e; font-weight: 600; }
     .card-desc {
