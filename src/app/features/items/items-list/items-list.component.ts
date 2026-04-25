@@ -94,6 +94,9 @@ import { Item, ItemType, ItemFilters } from '../../../core/interfaces/item.inter
               <h3 class="card-title">{{ item.title }}</h3>
               <p class="card-desc">{{ item.description }}</p>
               <div class="card-meta">
+                @if (!item.isOwner) {
+                  <span>👤 {{ item.user?.name ?? 'Usuario' }}</span>
+                }
                 @if (item.category) {
                   <span>{{ item.category.icon }} {{ item.category.name }}</span>
                 }

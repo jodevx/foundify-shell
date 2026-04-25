@@ -39,6 +39,11 @@ export interface Item {
   brand?: string | null;
   photoUrl?: string | null;
   userId: string;
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+  };
   isOwner?: boolean;
   pendingClaimsCount?: number;
   createdAt: string;
@@ -109,7 +114,7 @@ export interface InboxNotification {
   claimMessage: string;
   status: ClaimStatus;
   createdAt: string;
-  claimant: { id: string; email: string };
+  claimant: { id: string; name: string };
   interactionLabel: 'aviso' | 'reclamo';
 }
 

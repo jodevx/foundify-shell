@@ -37,7 +37,7 @@ import { InboxNotification } from '../../../core/interfaces/item.interface';
               </div>
 
               <h3 class="item-title">{{ notification.itemTitle }}</h3>
-              <p class="from">De: {{ notification.claimant.email }}</p>
+              <p class="from">De: {{ notification.claimant.name }}</p>
               <p class="message">{{ notification.claimMessage }}</p>
 
               <div class="actions">

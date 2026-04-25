@@ -102,6 +102,12 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
                 <span class="detail-label">Fecha</span>
                 <span>📅 {{ item()!.eventDate | date:'dd/MM/yyyy' }}</span>
               </div>
+              @if (!item()!.isOwner) {
+                <div class="detail-item">
+                  <span class="detail-label">Publicado por</span>
+                  <span>👤 {{ item()!.user?.name ?? 'Usuario' }}</span>
+                </div>
+              }
               @if (item()!.color) {
                 <div class="detail-item">
                   <span class="detail-label">Color</span>
