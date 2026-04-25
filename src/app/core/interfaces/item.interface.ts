@@ -2,13 +2,11 @@ export type ItemType = 'lost_item' | 'found_item';
 
 export type ItemStatusPerdido =
   | 'reportado_perdido'
-  | 'en_validacion'
   | 'recuperado'
   | 'cerrado_sin_recuperar';
 
 export type ItemStatusEncontrado =
   | 'reportado_encontrado'
-  | 'en_resguardo'
   | 'en_validacion'
   | 'devuelto_propietario'
   | 'entregado_autoridad'
@@ -42,6 +40,7 @@ export interface Item {
   photoUrl?: string | null;
   userId: string;
   isOwner?: boolean;
+  pendingClaimsCount?: number;
   createdAt: string;
   updatedAt: string;
 }

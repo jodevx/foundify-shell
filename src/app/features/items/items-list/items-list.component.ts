@@ -78,11 +78,18 @@ import { Item, ItemType, ItemFilters } from '../../../core/interfaces/item.inter
               @if (item.photoUrl) {
                 <img class="card-photo" [src]="item.photoUrl" alt="Imagen del objeto" />
               }
-              <div class="card-badges">
+              <div class="card-badges" [class.single-badge]="!shouldShowStatusBadge(item)">
                 <span class="badge" [class]="'badge-' + item.type.replace('_', '-')">
                   {{ item.type === 'lost_item' ? '🔍 Lo perdí' : '✨ Quiero devolverlo' }}
                 </span>
-                <span class="badge badge-status">{{ formatStatus(item.status) }}</span>
+                @if (shouldShowStatusBadge(item)) {
+                  <span class="badge badge-status">{{ formatStatus(item.status) }}</span>
+                }
+                @if (item.isOwner && (item.pendingClaimsCount ?? 0) > 0) {
+                  <span class="badge badge-claims">
+                    🔔 {{ item.pendingClaimsCount }} reclamo{{ (item.pendingClaimsCount ?? 0) > 1 ? 's' : '' }}
+                  </span>
+                }
               </div>
               <h3 class="card-title">{{ item.title }}</h3>
               <p class="card-desc">{{ item.description }}</p>
@@ -208,6 +215,7 @@ import { Item, ItemType, ItemFilters } from '../../../core/interfaces/item.inter
       box-shadow: 0 8px 24px rgba(0,0,0,0.12);
     }
     .card-badges { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .card-badges.single-badge { gap: 0; }
     .badge {
       padding: 4px 10px;
       border-radius: 12px;
@@ -217,6 +225,7 @@ import { Item, ItemType, ItemFilters } from '../../../core/interfaces/item.inter
     .badge-lost-item { background: #fff3cd; color: #856404; }
     .badge-found-item { background: #d1e7dd; color: #0f5132; }
     .badge-status { background: #f0f0f0; color: #555; }
+    .badge-claims { background: #fef3c7; color: #92400e; }
     .card-title { margin: 0 0 8px; font-size: 1.05rem; color: #1a1a2e; font-weight: 600; }
     .card-desc {
       margin: 0 0 12px;
@@ -306,6 +315,20 @@ export class ItemsListComponent implements OnInit {
   }
 
   formatStatus(status: string): string {
-    return status.replace(/_/g, ' ');
+    const labels: Record<string, string> = {
+      reportado_perdido: '🔍 En búsqueda',
+      reportado_encontrado: '📦 Reportado encontrado',
+      en_validacion: 'En validación',
+      recuperado: '✅ Recuperado',
+      cerrado_sin_recuperar: 'Cerrado sin recuperar',
+      devuelto_propietario: '✅ Devuelto al propietario',
+      entregado_autoridad: 'Entregado a autoridad',
+      cerrado_sin_reclamo: 'Cerrado sin reclamo',
+    };
+    return labels[status] ?? status.replace(/_/g, ' ');
+  }
+
+  shouldShowStatusBadge(item: Item): boolean {
+    return !(item.type === 'found_item' && item.status === 'reportado_encontrado');
   }
 }

@@ -8,25 +8,36 @@ import { ClaimsService } from '../../../core/services/claims.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Item, Claim, ItemStatus } from '../../../core/interfaces/item.interface';
 
-const CLAIMABLE_STATUSES = ['reportado_encontrado', 'en_resguardo'];
+const CLAIMABLE_STATUSES = ['reportado_perdido', 'reportado_encontrado'];
+const INITIAL_STATUS_BY_TYPE: Record<string, string> = {
+  lost_item: 'reportado_perdido',
+  found_item: 'reportado_encontrado',
+};
 
 const STATUS_LABELS: Record<string, string> = {
-  reportado_perdido: 'Reportado perdido',
+  reportado_perdido: '🔍 En búsqueda',
   en_validacion: 'En validación',
-  recuperado: 'Recuperado ✅',
+  recuperado: '✅ Recuperado',
   cerrado_sin_recuperar: 'Cerrado sin recuperar',
-  reportado_encontrado: 'Reportado encontrado',
-  en_resguardo: 'En resguardo',
-  devuelto_propietario: 'Devuelto al propietario ✅',
+  reportado_encontrado: '📦 Reportado encontrado',
+  devuelto_propietario: '✅ Devuelto al propietario',
   entregado_autoridad: 'Entregado a autoridad',
   cerrado_sin_reclamo: 'Cerrado sin reclamo',
 };
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
-  reportado_perdido: ['en_validacion', 'recuperado', 'cerrado_sin_recuperar'],
-  en_validacion: ['recuperado', 'cerrado_sin_recuperar', 'reportado_perdido'],
-  reportado_encontrado: ['en_resguardo', 'en_validacion', 'cerrado_sin_reclamo'],
-  en_resguardo: ['en_validacion', 'cerrado_sin_reclamo', 'entregado_autoridad'],
+  reportado_perdido: ['recuperado', 'cerrado_sin_recuperar'],
+  recuperado: ['reportado_perdido'],
+  cerrado_sin_recuperar: ['reportado_perdido'],
+  en_validacion: [],
+  reportado_encontrado: [
+    'devuelto_propietario',
+    'entregado_autoridad',
+    'cerrado_sin_reclamo',
+  ],
+  devuelto_propietario: ['reportado_encontrado'],
+  entregado_autoridad: ['reportado_encontrado'],
+  cerrado_sin_reclamo: ['reportado_encontrado'],
 };
 
 @Component({
@@ -51,18 +62,22 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
               <button class="btn-back" (click)="router.navigate(['/items'])">← Volver</button>
               @if (item()!.isOwner) {
                 <div class="owner-actions">
-                  <button class="btn-outline" (click)="router.navigate(['/items', item()!.id, 'edit'])">Editar</button>
+                  @if (canEditItem()) {
+                    <button class="btn-outline" (click)="router.navigate(['/items', item()!.id, 'edit'])">Editar</button>
+                  }
                   <button class="btn-danger-outline" (click)="deleteItem()">Eliminar</button>
                 </div>
               }
             </div>
 
             <!-- Badges -->
-            <div class="badges">
+            <div class="badges" [class.single-badge]="!shouldShowStatusBadge()">
               <span class="badge" [class]="'badge-' + item()!.type.replace('_', '-')">
                 {{ item()!.type === 'lost_item' ? '🔍 Lo perdí' : '✨ Quiero devolverlo' }}
               </span>
-              <span class="badge badge-status">{{ formatStatus(item()!.status) }}</span>
+              @if (shouldShowStatusBadge()) {
+                <span class="badge badge-status">{{ formatStatus(item()!.status) }}</span>
+              }
             </div>
 
             <h1 class="item-title">{{ item()!.title }}</h1>
@@ -114,27 +129,27 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
                 <div class="status-actions">
                   @for (status of allowedTransitions(); track status) {
                     <button class="btn-status" (click)="changeStatus(status)">
-                      → {{ formatStatus(status) }}
+                      → {{ formatTransitionLabel(status) }}
                     </button>
                   }
                 </div>
               </div>
             }
 
-            <!-- Botón reclamar (no dueño, objeto encontrado, estado claimable) -->
-            @if (!item()!.isOwner && authService.isAuthenticated() && item()!.type === 'found_item' && isClaimable()) {
+            <!-- Botón reclamo (no dueño, estado claimable) -->
+            @if (!item()!.isOwner && authService.isAuthenticated() && isClaimable()) {
               <div class="claim-section">
                 @if (!showClaimForm()) {
                   <button class="btn-claim" (click)="showClaimForm.set(true)">
-                    🙋 Creo que es mío
+                    {{ claimPrimaryActionLabel() }}
                   </button>
                 } @else {
                   <div class="claim-form">
-                    <h3>Enviar reclamo</h3>
-                    <p class="claim-hint">Describe por qué crees que este objeto es tuyo. Incluye detalles que solo el dueño sabría.</p>
+                    <h3>{{ claimFormTitle() }}</h3>
+                    <p class="claim-hint">{{ claimHintText() }}</p>
                     <textarea
                       [(ngModel)]="claimMessage"
-                      placeholder="Ej: Es mi mochila azul Nike, adentro tiene una libreta con mi nombre y unas llaves plateadas..."
+                      [placeholder]="claimPlaceholderText()"
                       rows="4"
                     ></textarea>
                     @if (claimError()) {
@@ -143,7 +158,7 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
                     <div class="claim-actions">
                       <button class="btn-secondary" (click)="showClaimForm.set(false)">Cancelar</button>
                       <button class="btn-claim" (click)="submitClaim()" [disabled]="submittingClaim()">
-                        {{ submittingClaim() ? 'Enviando...' : 'Enviar reclamo' }}
+                        {{ submittingClaim() ? 'Enviando...' : claimSubmitLabel() }}
                       </button>
                     </div>
                   </div>
@@ -151,21 +166,21 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
               </div>
             }
 
-            @if (!authService.isAuthenticated() && item()!.type === 'found_item' && isClaimable()) {
+            @if (!authService.isAuthenticated() && isClaimable()) {
               <div class="claim-section">
-                <p>¿Es tuyo? <a (click)="router.navigate(['/login'])">Inicia sesión</a> para reclamarlo.</p>
+                <p>{{ claimLoginPromptPrefix() }} <a (click)="router.navigate(['/login'])">Inicia sesión</a> para enviar tu mensaje.</p>
               </div>
             }
           </div>
 
-          <!-- Panel de reclamos (solo dueño del item encontrado) -->
-          @if (item()!.isOwner && item()!.type === 'found_item') {
+          <!-- Panel de reclamos (solo dueño) -->
+          @if (item()!.isOwner) {
             <div class="claims-panel">
-              <h2>Reclamos recibidos</h2>
+              <h2>{{ claimsPanelTitle() }}</h2>
               @if (loadingClaims()) {
                 <div class="loading"><div class="spinner small"></div></div>
               } @else if (claims().length === 0) {
-                <p class="no-claims">Aún no hay reclamos para esta publicación.</p>
+                <p class="no-claims">{{ claimsPanelEmptyText() }}</p>
               } @else {
                 @for (claim of claims(); track claim.id) {
                   <div class="claim-card" [class]="'claim-' + claim.status">
@@ -218,6 +233,7 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
     .owner-actions { display: flex; gap: 8px; }
 
     .badges { display: flex; gap: 8px; margin-bottom: 16px; }
+    .badges.single-badge { gap: 0; }
     .badge { padding: 4px 12px; border-radius: 12px; font-size: 0.82rem; font-weight: 600; }
     .badge-lost-item { background: #fff3cd; color: #856404; }
     .badge-found-item { background: #d1e7dd; color: #0f5132; }
@@ -357,7 +373,7 @@ export class ItemDetailComponent implements OnInit {
       next: item => {
         this.item.set(item);
         this.loading.set(false);
-        if (item.isOwner && item.type === 'found_item') {
+        if (item.isOwner) {
           this.loadClaims(id);
         }
       },
@@ -380,12 +396,93 @@ export class ItemDetailComponent implements OnInit {
     return CLAIMABLE_STATUSES.includes(this.item()!.status);
   }
 
+  claimPrimaryActionLabel(): string {
+    if (this.item()?.type === 'lost_item') {
+      return '📩 Yo lo tengo';
+    }
+    return '🙋 Creo que es mío';
+  }
+
+  claimSubmitLabel(): string {
+    if (this.item()?.type === 'lost_item') {
+      return 'Enviar aviso';
+    }
+    return 'Enviar reclamo';
+  }
+
+  claimHintText(): string {
+    if (this.item()?.type === 'lost_item') {
+      return 'Describe cómo ayudarías a devolverlo y cómo pueden contactarte para coordinar la entrega.';
+    }
+    return 'Describe por qué crees que este objeto es tuyo. Incluye detalles que solo el dueño sabría.';
+  }
+
+  claimPlaceholderText(): string {
+    if (this.item()?.type === 'lost_item') {
+      return 'Ej: Creo tener tu billetera. La encontré en la salida norte del metro y puedo entregarla hoy en la tarde...';
+    }
+    return 'Ej: Es mi mochila azul Nike, adentro tiene una libreta con mi nombre y unas llaves plateadas...';
+  }
+
+  claimLoginPromptPrefix(): string {
+    if (this.item()?.type === 'lost_item') {
+      return '¿Lo tienes?';
+    }
+    return '¿Es tuyo?';
+  }
+
+  claimFormTitle(): string {
+    if (this.item()?.type === 'lost_item') {
+      return 'Enviar aviso';
+    }
+    return 'Enviar reclamo';
+  }
+
+  claimsPanelTitle(): string {
+    if (this.item()?.type === 'lost_item') {
+      return 'Avisos recibidos';
+    }
+    return 'Reclamos recibidos';
+  }
+
+  claimsPanelEmptyText(): string {
+    if (this.item()?.type === 'lost_item') {
+      return 'Aún no hay avisos para esta publicación.';
+    }
+    return 'Aún no hay reclamos para esta publicación.';
+  }
+
   allowedTransitions(): string[] {
     return ALLOWED_TRANSITIONS[this.item()!.status] ?? [];
   }
 
+  canEditItem(): boolean {
+    const currentItem = this.item();
+    if (!currentItem) return false;
+    return currentItem.status === INITIAL_STATUS_BY_TYPE[currentItem.type];
+  }
+
   formatStatus(status: string): string {
     return STATUS_LABELS[status] ?? status.replace(/_/g, ' ');
+  }
+
+  formatTransitionLabel(nextStatus: string): string {
+    const currentItem = this.item();
+    if (!currentItem) return this.formatStatus(nextStatus);
+
+    const initialStatus = INITIAL_STATUS_BY_TYPE[currentItem.type];
+    const isReopenAction =
+      nextStatus === initialStatus && currentItem.status !== initialStatus;
+
+    return isReopenAction
+      ? '🔓 Reabrir publicación'
+      : this.formatStatus(nextStatus);
+  }
+
+  shouldShowStatusBadge(): boolean {
+    const currentItem = this.item();
+    if (!currentItem) return false;
+    return !(currentItem.type === 'found_item' && currentItem.status === 'reportado_encontrado');
   }
 
   formatClaimStatus(status: string): string {
@@ -407,7 +504,11 @@ export class ItemDetailComponent implements OnInit {
 
   submitClaim() {
     if (!this.claimMessage.trim()) {
-      this.claimError.set('Por favor escribe un mensaje para tu reclamo.');
+      this.claimError.set(
+        this.item()?.type === 'lost_item'
+          ? 'Por favor escribe un mensaje con el aviso.'
+          : 'Por favor escribe un mensaje para tu reclamo.',
+      );
       return;
     }
     this.claimError.set('');

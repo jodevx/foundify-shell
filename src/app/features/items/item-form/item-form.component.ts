@@ -7,6 +7,11 @@ import { ItemsService } from '../../../core/services/items.service';
 import { CategoriesService } from '../../../core/services/categories.service';
 import { Item, CreateItemRequest, ItemType } from '../../../core/interfaces/item.interface';
 
+const INITIAL_STATUS_BY_TYPE: Record<string, string> = {
+  lost_item: 'reportado_perdido',
+  found_item: 'reportado_encontrado',
+};
+
 @Component({
   selector: 'app-item-form',
   standalone: true,
@@ -148,7 +153,7 @@ import { Item, CreateItemRequest, ItemType } from '../../../core/interfaces/item
 
             <div class="form-actions">
               <button type="button" class="btn-secondary" (click)="router.navigate(['/items'])">Cancelar</button>
-              <button type="submit" class="btn-primary" [disabled]="submitting()">
+              <button type="submit" class="btn-primary" [disabled]="submitting() || editingLocked()">
                 {{ submitting() ? 'Guardando...' : (editMode() ? 'Guardar cambios' : 'Publicar') }}
               </button>
             </div>
@@ -297,6 +302,7 @@ export class ItemFormComponent implements OnInit {
   readonly loadingItem = signal(false);
   readonly submitting = signal(false);
   readonly error = signal('');
+  readonly editingLocked = signal(false);
   readonly photoPreview = signal<string | null>(null);
   @ViewChild('photoInput') private photoInputRef?: ElementRef<HTMLInputElement>;
 
@@ -331,6 +337,18 @@ export class ItemFormComponent implements OnInit {
     this.loadingItem.set(true);
     this.itemsService.getById(id).subscribe({
       next: (item: Item) => {
+        const isEditable =
+          item.status === INITIAL_STATUS_BY_TYPE[item.type];
+
+        if (!isEditable) {
+          this.editingLocked.set(true);
+          this.error.set(
+            'Esta publicación no se puede editar porque ya cambió de estado. Reábrela desde el detalle para editarla.',
+          );
+          this.loadingItem.set(false);
+          return;
+        }
+
         this.form = {
           title: item.title,
           description: item.description,
@@ -353,6 +371,13 @@ export class ItemFormComponent implements OnInit {
   }
 
   submit() {
+    if (this.editingLocked()) {
+      this.error.set(
+        'Reabre la publicación desde el detalle para habilitar la edición.',
+      );
+      return;
+    }
+
     if (!this.form.title || !this.form.description || !this.form.categorySlug || !this.form.location || !this.form.eventDate) {
       this.error.set('Por favor completa todos los campos obligatorios.');
       return;
